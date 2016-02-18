@@ -22,6 +22,7 @@ public class HttpCall {
     private static OkHttpClient client = new OkHttpClient();
     private static String TAG = "ARC";
     private static final String POST_NULL = "-1";
+    private static final int MAX_LINKS_CACHE = 2;   //Maximum number of links to be cached in the database
 
     public static String getDataPost(String url, String postJson) {
 
@@ -45,9 +46,7 @@ public class HttpCall {
                     response = cacheResponse.getResponse();
 
                 } else { // if not there in cache make new cache
-                    CacheResponse cacheResponse = new CacheResponse(url, postJson, response, getCurrentTimeLong(), 1);
-                    cacheResponse.save();
-                    response = cacheResponse.getResponse();
+                    newCache(url,postJson,response);
                 }
             }
 
@@ -87,9 +86,7 @@ public class HttpCall {
                     response = cacheResponse.getResponse();
 
                 } else { // if not there in cache make new cache
-                    CacheResponse cacheResponse = new CacheResponse(url, POST_NULL, response, getCurrentTimeLong(), 1);
-                    cacheResponse.save();
-                    response = cacheResponse.getResponse();
+                    newCache(url,POST_NULL,response);
                 }
             }
 
@@ -104,6 +101,34 @@ public class HttpCall {
             }
         }
         return response;
+    }
+
+    private static String newCache(String url, String postData, String response) {  //add new get/post cache link
+        long count = CacheResponse.count(CacheResponse.class);
+        if (count == MAX_LINKS_CACHE) {     //if the count is equal to the maximum number of links to be cached is specified
+
+            /*
+            Search the least used cached link from the table.
+            The links are ordered by count and time
+            The link with least count is removed
+            Multiple links with same least count are then further ordered by the time they were added and the oldest one from them is deleted
+             */
+            List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT ID FROM CACHE_RESPONSE ORDER BY COUNT DESC, TIME DESC");
+
+            int size = cacheResponses.size();
+            long lastId = cacheResponses.get(size - 1).getId();
+            CacheResponse cacheResponseOld = CacheResponse.findById(CacheResponse.class, lastId);   //remove the last link from the table
+            cacheResponseOld.delete();
+
+            CacheResponse cacheResponseNew = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1); //add new link in the table
+            cacheResponseNew.save();
+            return cacheResponseNew.getResponse();
+
+        } else {        //if count is less than maximum number of links
+            CacheResponse cacheResponse = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1);
+            cacheResponse.save();
+            return cacheResponse.getResponse();
+        }
     }
 
     private static String post(String url, String json) throws IOException {
@@ -145,7 +170,7 @@ public class HttpCall {
         return false;
     }
 
-    public static long getCurrentTimeLong() {
+    private static long getCurrentTimeLong() {
         Date date = new Date();
         return date.getTime();
     }
