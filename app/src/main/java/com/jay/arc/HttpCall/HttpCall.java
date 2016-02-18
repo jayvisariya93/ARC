@@ -5,6 +5,7 @@ import android.util.Log;
 import com.jay.arc.db.CacheResponse;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import okhttp3.MediaType;
@@ -20,7 +21,7 @@ public class HttpCall {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static OkHttpClient client = new OkHttpClient();
     private static String TAG = "ARC";
-    private static final String  POST_NULL ="-1";
+    private static final String POST_NULL = "-1";
 
     public static String getDataPost(String url, String postJson) {
 
@@ -37,12 +38,14 @@ public class HttpCall {
                 if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
                     CacheResponse cacheResponse = cacheResponses.get(0);
                     cacheResponse.setResponse(response);
+                    cacheResponse.setCount(cacheResponse.getCount() + 1);
                     cacheResponse.save();
+                    cacheResponse.setTime(getCurrentTimeLong());
 
                     response = cacheResponse.getResponse();
 
                 } else { // if not there in cache make new cache
-                    CacheResponse cacheResponse = new CacheResponse(url, postJson, response);
+                    CacheResponse cacheResponse = new CacheResponse(url, postJson, response, getCurrentTimeLong(), 1);
                     cacheResponse.save();
                     response = cacheResponse.getResponse();
                 }
@@ -52,12 +55,15 @@ public class HttpCall {
 
             List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
             if (cacheResponses.size() == 1) {  //if already there in cache //send this cached response
-                response = cacheResponses.get(0).getResponse();
+                CacheResponse cacheResponse = cacheResponses.get(0);
+                cacheResponse.setCount(cacheResponse.getCount() + 1);
+                cacheResponse.save();
+
+                response = cacheResponse.getResponse();
             }
         }
         return response;
     }
-
 
     public static String getDataGet(String url) {
 
@@ -70,30 +76,35 @@ public class HttpCall {
             }
 
             if (!response.equals("")) { //if response not recevied //if error //or response is not
-                List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url,POST_NULL);
+                List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, POST_NULL);
                 if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
                     CacheResponse cacheResponse = cacheResponses.get(0);
                     cacheResponse.setResponse(response);
+                    cacheResponse.setCount(cacheResponse.getCount() + 1);
+                    cacheResponse.setTime(getCurrentTimeLong());
                     cacheResponse.save();
 
                     response = cacheResponse.getResponse();
 
                 } else { // if not there in cache make new cache
-                    CacheResponse cacheResponse = new CacheResponse(url, POST_NULL, response);
+                    CacheResponse cacheResponse = new CacheResponse(url, POST_NULL, response, getCurrentTimeLong(), 1);
                     cacheResponse.save();
                     response = cacheResponse.getResponse();
                 }
             }
 
         } else {    //if user is not connected to internet
-            List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url,POST_NULL);
+            List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, POST_NULL);
             if (cacheResponses.size() == 1) {  //if already there in cache //send this cached response
-                response = cacheResponses.get(0).getResponse();
+                CacheResponse cacheResponse = cacheResponses.get(0);
+                cacheResponse.setCount(cacheResponse.getCount() + 1);
+                cacheResponse.save();
+
+                response = cacheResponse.getResponse();
             }
         }
         return response;
     }
-
 
     private static String post(String url, String json) throws IOException {
         RequestBody body = RequestBody.create(JSON, json);
@@ -106,7 +117,6 @@ public class HttpCall {
         Response response = client.newCall(request).execute();
         return response.body().string();
     }
-
 
     private static String get(String url) throws IOException {
         Request request = new Request.Builder()
@@ -133,5 +143,10 @@ public class HttpCall {
         }
 
         return false;
+    }
+
+    public static long getCurrentTimeLong() {
+        Date date = new Date();
+        return date.getTime();
     }
 }

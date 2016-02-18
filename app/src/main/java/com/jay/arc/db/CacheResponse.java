@@ -10,15 +10,19 @@ public class CacheResponse extends SugarRecord{
     public String url;
     public String postData;
     public String response;
+    public long time;
+    public int count;
 
     public CacheResponse() {
         super();
     }
 
-    public CacheResponse(String url,String postData, String response) {
+    public CacheResponse(String url,String postData, String response, long time, int count) {
         this.postData = postData;
         this.response = response;
         this.url = url;
+        this.time = time;
+        this.count = count;
     }
 
     public String getPostData() {
@@ -43,5 +47,21 @@ public class CacheResponse extends SugarRecord{
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
     }
 }
