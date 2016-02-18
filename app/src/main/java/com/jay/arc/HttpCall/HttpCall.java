@@ -31,13 +31,20 @@ public class HttpCall {
                 Log.e(TAG, Log.getStackTraceString(ioe));
             }
 
-            List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
-            if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
-                CacheResponse cacheResponse = cacheResponses.get(0);
-                cacheResponse.setPostData(response);
-            } else { // if not there in cache make new cache
-                CacheResponse cacheResponse = new CacheResponse(url, postJson, response);
-                cacheResponse.save();
+            if (!response.equals("")) { //if response not recevied //if error //or response is not
+                List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
+                if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
+                    CacheResponse cacheResponse = cacheResponses.get(0);
+                    cacheResponse.setPostData(response);
+                    cacheResponse.save();
+
+                    response = cacheResponse.getResponse();
+
+                } else { // if not there in cache make new cache
+                    CacheResponse cacheResponse = new CacheResponse(url, postJson, response);
+                    cacheResponse.save();
+                    response = cacheResponse.getResponse();
+                }
             }
 
         } else {    //if user is not connected to internet
@@ -45,8 +52,6 @@ public class HttpCall {
             List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
             if (cacheResponses.size() == 1) {  //if already there in cache //send this cached response
                 response = cacheResponses.get(0).getResponse();
-            } else {
-                response = "";
             }
         }
         return response;
