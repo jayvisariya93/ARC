@@ -22,6 +22,7 @@ public class HttpCall {
     private static OkHttpClient client = new OkHttpClient();
     private static String TAG = "ARC";
     private static final String POST_NULL = "-1";
+    private static int HTTP_CODE;
     private static final int MAX_LINKS_CACHE = 2;   //Maximum number of links to be cached in the database
 
     public static String getDataPost(String url, String postJson) {
@@ -35,18 +36,29 @@ public class HttpCall {
             }
 
             if (!response.equals("")) { //if response not recevied //if error //or response is not
-                List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
-                if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
-                    CacheResponse cacheResponse = cacheResponses.get(0);
-                    cacheResponse.setResponse(response);
-                    cacheResponse.setCount(cacheResponse.getCount() + 1);
-                    cacheResponse.save();
-                    cacheResponse.setTime(getCurrentTimeLong());
+                if (HTTP_CODE == 200) {
+                    List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
+                    if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
+                        CacheResponse cacheResponse = cacheResponses.get(0);
+                        cacheResponse.setResponse(response);
+                        cacheResponse.setCount(cacheResponse.getCount() + 1);
+                        cacheResponse.save();
+                        cacheResponse.setTime(getCurrentTimeLong());
 
-                    response = cacheResponse.getResponse();
+                        response = cacheResponse.getResponse();
 
-                } else { // if not there in cache make new cache
-                    newCache(url,postJson,response);
+                    } else { // if not there in cache make new cache
+                        newCache(url, postJson, response);
+                    }
+                } else {
+                    List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, postJson);
+                    if (cacheResponses.size() == 1) {  //if already there in cache //send this cached response
+                        CacheResponse cacheResponse = cacheResponses.get(0);
+                        cacheResponse.setCount(cacheResponse.getCount() + 1);
+                        cacheResponse.save();
+
+                        response = cacheResponse.getResponse();
+                    }
                 }
             }
 
@@ -75,18 +87,29 @@ public class HttpCall {
             }
 
             if (!response.equals("")) { //if response not recevied //if error //or response is not
+                if (HTTP_CODE == 200) {
+                    List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, POST_NULL);
+                    if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
+                        CacheResponse cacheResponse = cacheResponses.get(0);
+                        cacheResponse.setResponse(response);
+                        cacheResponse.setCount(cacheResponse.getCount() + 1);
+                        cacheResponse.setTime(getCurrentTimeLong());
+                        cacheResponse.save();
+
+                        response = cacheResponse.getResponse();
+
+                    } else { // if not there in cache make new cache
+                        newCache(url, POST_NULL, response);
+                    }
+                }
+            } else {
                 List<CacheResponse> cacheResponses = CacheResponse.findWithQuery(CacheResponse.class, "SELECT * FROM CACHE_RESPONSE where URL = ? AND POST_DATA = ?", url, POST_NULL);
-                if (cacheResponses.size() == 1) { //if already there in cache //overwrite the old response with new response
+                if (cacheResponses.size() == 1) {  //if already there in cache //send this cached response
                     CacheResponse cacheResponse = cacheResponses.get(0);
-                    cacheResponse.setResponse(response);
                     cacheResponse.setCount(cacheResponse.getCount() + 1);
-                    cacheResponse.setTime(getCurrentTimeLong());
                     cacheResponse.save();
 
                     response = cacheResponse.getResponse();
-
-                } else { // if not there in cache make new cache
-                    newCache(url,POST_NULL,response);
                 }
             }
 
@@ -133,13 +156,14 @@ public class HttpCall {
 
     private static String post(String url, String json) throws IOException {
         RequestBody body = RequestBody.create(JSON, json);
-
         Request request = new Request.Builder()
                 .url(url)
                 .post(body)
                 .build();
 
         Response response = client.newCall(request).execute();
+        Log.e(TAG, response.toString());
+        HTTP_CODE = response.code();
         return response.body().string();
     }
 
@@ -149,6 +173,8 @@ public class HttpCall {
                 .build();
 
         Response response = client.newCall(request).execute();
+        Log.e(TAG, response.toString());
+        HTTP_CODE = response.code();
         return response.body().string();
     }
 
