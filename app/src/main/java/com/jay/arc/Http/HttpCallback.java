@@ -28,12 +28,12 @@ public class HttpCallback {
     private static String TAG = "ARC";
     private static final String POST_NULL = "-1";
     private static int HTTP_CODE;
-    private static final int MAX_LINKS_CACHE = 2;   //Maximum number of links to be cached in the database
-    private static boolean cachedPresent = false;
-
+    private static final int MAX_LINKS_CACHE = 50;   //Maximum number of links to be cached in the database
+    private static boolean cachedPresent;
 
     public static void get(final HttpInterface httpInterface, final String url) {
         String response = "";
+        cachedPresent = false;
         //Send the Cached copy initially
         List<CacheResponse> oldResponsesInitial = getCacheResponses(url, POST_NULL);
         if (oldResponsesInitial.size() == 1) {  //if already there in cache //send this cached response
@@ -81,6 +81,7 @@ public class HttpCallback {
 
     public static void post(final HttpInterface httpInterface, final String url, final String postData) {
         String response = "";
+        cachedPresent = false;
         //Send the Cached copy initially
         List<CacheResponse> oldResponsesInitial = getCacheResponses(url, postData);
         if (oldResponsesInitial.size() == 1) {  //if already there in cache //send this cached response
