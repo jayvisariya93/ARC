@@ -1,7 +1,8 @@
-package com.jay.arc.HttpCall;
+package com.jay.arc.Http;
 
 import android.util.Log;
 
+import com.jay.arc.Util.Md5;
 import com.jay.arc.db.CacheResponse;
 
 import java.io.IOException;
@@ -17,15 +18,15 @@ import okhttp3.Response;
 /**
  * Created by Jay on 18-02-2016.
  */
-public class HttpCall {
+public class HttpSimple {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static OkHttpClient client = new OkHttpClient();
     private static String TAG = "ARC";
-    private static final String POST_NULL = "-1";
+    private static final String POST_NULL = "-1";   //Do not change. Will remain -1 in case of Get request
     private static int HTTP_CODE;
     private static final int MAX_LINKS_CACHE = 2;   //Maximum number of links to be cached in the database
 
-    public static String getDataPost(String url, String postJson) {
+    public static String postRequest(String url, String postJson) {
 
         String response = "";
         if (hasInternet()) { //if user is connected to internet
@@ -76,7 +77,7 @@ public class HttpCall {
         return response;
     }
 
-    public static String getDataGet(String url) {
+    public static String getRequest(String url) {
 
         String response = "";
         if (hasInternet()) { //if user is connected to internet
@@ -143,12 +144,12 @@ public class HttpCall {
             CacheResponse cacheResponseOld = CacheResponse.findById(CacheResponse.class, lastId);   //remove the last link from the table
             cacheResponseOld.delete();
 
-            CacheResponse cacheResponseNew = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1); //add new link in the table
+            CacheResponse cacheResponseNew = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1, Md5.getHash(response)); //add new link in the table
             cacheResponseNew.save();
             return cacheResponseNew.getResponse();
 
         } else {        //if count is less than maximum number of links
-            CacheResponse cacheResponse = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1);
+            CacheResponse cacheResponse = new CacheResponse(url, postData, response, getCurrentTimeLong(), 1, Md5.getHash(response));
             cacheResponse.save();
             return cacheResponse.getResponse();
         }
@@ -162,7 +163,6 @@ public class HttpCall {
                 .build();
 
         Response response = client.newCall(request).execute();
-        Log.e(TAG, response.toString());
         HTTP_CODE = response.code();
         return response.body().string();
     }
@@ -173,7 +173,6 @@ public class HttpCall {
                 .build();
 
         Response response = client.newCall(request).execute();
-        Log.e(TAG, response.toString());
         HTTP_CODE = response.code();
         return response.body().string();
     }

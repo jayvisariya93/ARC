@@ -2,19 +2,36 @@ package com.jay.arc;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import com.jay.arc.HttpCall.HttpCall;
+import com.jay.arc.Http.HttpInterface;
+import com.jay.arc.Http.HttpSimple;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
+
     private static String TAG = "ARC";
-    private TextView tvJson;
+    private static TextView tvJson;
+
+
+    public static void test(final HttpInterface httpInterface){
+        httpInterface.refreshView("Jay");
+
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                httpInterface.refreshView("Visariya");
+            }
+        }, 5000);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             protected String doInBackground(Void... params) {
 
-                response[0] = HttpCall.getDataPost(url, json);
+                response[0] = HttpSimple.postRequest(url, json);
 
                 return null;
             }
@@ -57,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         new AsyncTask<Void, Void, String>() {
             @Override
             protected String doInBackground(Void... params) {
-                response[0] = HttpCall.getDataGet(url);
+                response[0] = HttpSimple.getRequest(url);
                 return null;
             }
 

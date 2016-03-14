@@ -12,7 +12,8 @@
         android:onClick="getApi"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentStart="true"
+        android:visibility="gone"/>
 
     <Button
         android:layout_width="wrap_content"
@@ -22,7 +23,8 @@
         android:onClick="postApi"
         android:layout_above="@+id/linearLayout"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"/>
+        android:layout_alignParentEnd="true"
+        android:visibility="gone"/>
 
     <LinearLayout
         android:orientation="vertical"
